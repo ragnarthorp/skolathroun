@@ -93,12 +93,31 @@ tbody tr:hover{background:var(--accent-soft)}
 .spark{display:grid;grid-template-columns:repeat(11,8px);gap:2px;align-items:end;height:22px}
 .spark span{display:block;background:var(--grein);border-radius:1px;min-height:0}
 .spark span.p{background:var(--pistill)} .spark span.e{background:var(--line);height:2px!important}
+.dist{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px;margin-bottom:16px}
+.dist-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;align-items:baseline;margin-bottom:8px}
+.dist-head h2{font:600 16px var(--display);margin:0}
+.dist-head span{font-size:12px;color:var(--muted)}
+.dist-rows{display:grid;gap:2px}
+.drow{all:unset;cursor:pointer;display:grid;grid-template-columns:96px 1fr 104px;gap:12px;align-items:center;padding:4px 6px;border-radius:4px;font-size:13.5px}
+.drow:hover{background:var(--accent-soft)}
+.drow[aria-pressed="true"]{background:var(--accent-soft);font-weight:600}
+.drow:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.dk{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.dbar{height:12px;background:var(--bg);border-radius:2px;overflow:hidden}
+.dbar span{display:block;height:100%;background:var(--grein);border-radius:2px;min-width:2px}
+.dn{font-family:var(--mono);color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+tr.grp th{background:var(--bg);color:var(--ink);font:600 13px var(--body);text-transform:none;letter-spacing:0;position:static;padding-top:14px}
+tbody tr.grp:hover{background:var(--bg)}
+.tnote{font-size:12px;color:var(--muted);margin:8px 0 0}
 .empty{padding:28px 0;color:var(--muted)}
 details.notes{margin-top:36px;border-top:1px solid var(--line);padding-top:16px;color:var(--muted);font-size:14px}
 details.notes summary{cursor:pointer;font:600 15px var(--display);color:var(--ink)}
 details.notes p{max-width:70ch}
 .more{all:unset;cursor:pointer;display:block;margin:16px auto 0;padding:9px 18px;border:1px solid var(--line);border-radius:999px;background:var(--surface);font-weight:500}
 @media (max-width:560px){
+  .drow{grid-template-columns:auto 1fr auto;gap:8px;font-size:12.5px}
+  .dk,.dn{white-space:nowrap}
+  .toolbar{position:static}
   .bars,.years{gap:3px}
   .entry{grid-template-columns:1fr}
   .entry .yr{padding:0}
@@ -157,7 +176,7 @@ const TLABEL={g:"Grein",p:"Pistill",b:"Grein og pistill"};
 const coll=new Intl.Collator("is");
 DATA.forEach(e=>{e.k=TYPE[e.t];e.ft=fold(e.title);e.fa=e.a.map(fold)});
 function fold(s){let o="";for(const ch of s)o+=ch.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().charAt(0)||ch;return o}
-const S={view:"skra",q:"",type:"all",from:2016,to:2026,author:null,sortS:"yr-desc",sortA:"t",dirA:-1,limit:80};
+const S={view:"skra",q:"",type:"all",from:2016,to:2026,author:null,sortS:"yr-desc",sortA:"ga",dirA:-1,nG:null,limit:80};
 try{const v=localStorage.getItem("hof-view");if(v)S.view=v}catch(e){}
 if(["skra","hofundar"].includes(location.hash.slice(1)))S.view=location.hash.slice(1);
 const $=id=>document.getElementById(id);
@@ -200,12 +219,13 @@ function renderActive(){
   if(S.author&&S.view==="skra")parts.push(`<button class="pill-x" data-clear="author" aria-label="Fjarlægja höfundasíu">Höfundur: ${esc(S.author)}</button>`);
   if(S.from!==2016||S.to!==2026)parts.push(`<button class="pill-x" data-clear="years">Ár: ${S.from===S.to?S.from:S.from+"–"+S.to}</button>`);
   if(S.type!=="all")parts.push(`<button class="pill-x" data-clear="type">${S.type==="g"?"Greinar":"Pistlar"}</button>`);
+  if(S.nG!==null&&S.view==="hofundar")parts.push(`<button class="pill-x" data-clear="nG">Höfundar með ${gr(S.nG)}</button>`);
   if(S.q.trim())parts.push(`<button class="pill-x" data-clear="q">Leit: „${esc(S.q.trim())}“</button>`);
   if(parts.length>1)parts.push(`<button class="linkbtn" data-clear="all">Hreinsa allt</button>`);
   $("active").innerHTML=parts.join("");
   $("active").querySelectorAll("[data-clear]").forEach(b=>b.onclick=()=>{const c=b.dataset.clear;
     if(c==="author"||c==="all")S.author=null;if(c==="years"||c==="all"){S.from=2016;S.to=2026}
-    if(c==="type"||c==="all")S.type="all";if(c==="q"||c==="all"){S.q="";$("q").value=""}render()});
+    if(c==="type"||c==="all")S.type="all";if(c==="nG"||c==="all")S.nG=null;if(c==="q"||c==="all"){S.q="";$("q").value=""}render()});
 }
 function renderEntries(){
   let list=DATA.filter(e=>typeOk(e)&&yearOk(e)&&authOk(e)&&qOk(e));
@@ -226,28 +246,38 @@ function renderAuthors(){
   const ents=DATA.filter(e=>typeOk(e)&&yearOk(e));const map=new Map();
   ents.forEach(e=>e.a.forEach(a=>{let r=map.get(a);if(!r){r={a,g:0,p:0,b:0,yrs:{}};map.set(a,r)}r[e.k]++;(r.yrs[e.y]??={g:0,p:0});r.yrs[e.y][e.k==="p"?"p":"g"]++}));
   const q=fold(S.q.trim());
-  let rows=[...map.values()].map(r=>(r.t=r.g+r.p+r.b,r)).filter(r=>!q||fold(r.a).includes(q));
+  const all=[...map.values()].map(r=>(r.t=r.g+r.p+r.b,r.ga=r.g+r.b,r.pa=r.p+r.b,r)).filter(r=>!q||fold(r.a).includes(q));
+  const dist=new Map();all.forEach(r=>dist.set(r.ga,(dist.get(r.ga)||0)+1));
+  if(S.nG!==null&&!dist.has(S.nG))S.nG=null;
+  let rows=all.filter(r=>S.nG===null||r.ga===S.nG);
   const key=S.sortA,dir=S.dirA;
   rows.sort((x,y)=>key==="a"?dir*coll.compare(x.a,y.a):dir*(x[key]-y[key])||coll.compare(x.a,y.a));
   $("result").textContent=`${rows.length} ${rows.length%10===1&&rows.length%100!==11?"höfundur":"höfundar"}${S.from!==2016||S.to!==2026||S.type!=="all"?" með færslur innan síunnar":""}`;
   if(!rows.length){$("view").innerHTML=`<p class="empty">Enginn höfundur passar við þessa leit.</p>`;return}
+  const ks=[...dist.keys()].sort((a,b)=>b-a),dmx=Math.max(...dist.values());
+  const distHtml=`<section class="dist" aria-label="Höfundar eftir fjölda greina"><div class="dist-head"><h2>Höfundar eftir fjölda greina</h2><span>Smelltu á línu til að sjá aðeins þá höfunda</span></div><div class="dist-rows">${
+    ks.map(k=>`<button class="drow" data-k="${k}" aria-pressed="${S.nG===k}"><span class="dk">${k?gr(k):"Engin grein"}</span><span class="dbar"><span style="width:${dist.get(k)/dmx*100}%"></span></span><span class="dn">${dist.get(k)} ${hf(dist.get(k))}</span></button>`).join("")}</div></section>`;
   const mx=Math.max(1,...rows.flatMap(r=>Object.values(r.yrs).map(v=>v.g+v.p)));
   const th=(k,l,n)=>`<th${n?' class="n"':""} aria-sort="${S.sortA===k?(S.dirA>0?"ascending":"descending"):"none"}"><button data-k="${k}"${S.sortA===k?` data-dir="${S.dirA>0?"↑":"↓"}"`:""}>${l}</button></th>`;
   const cell=v=>`<td class="n${v?"":" zero"}">${v}</td>`;
-  $("view").innerHTML=`<div class="tablewrap"><table><thead><tr>${th("a","Höfundur")}${th("g","Greinar",1)}${th("p","Pistlar",1)}${th("b","Bæði",1)}${th("t","Alls",1)}<th>2016–2026</th></tr></thead><tbody>${
-    rows.map(r=>`<tr><td><button class="au" data-a="${esc(r.a)}">${hl(r.a)}</button></td>${cell(r.g)}${cell(r.p)}${cell(r.b)}<td class="n"><b>${r.t}</b></td><td><div class="spark" title="${esc(Object.entries(r.yrs).map(([y,v])=>y+": "+(v.g+v.p)).join(", "))}">${
+  $("view").innerHTML=distHtml+`<div class="tablewrap"><table><thead><tr>${th("a","Höfundur")}${th("ga","Greinar",1)}${th("pa","Pistlar",1)}${th("b","Bæði",1)}${th("t","Alls",1)}<th>2016–2026</th></tr></thead><tbody>${
+    rows.map((r,i)=>`${S.sortA==="ga"&&(i===0||rows[i-1].ga!==r.ga)?`<tr class="grp"><th colspan="6">${r.ga?gr(r.ga):"Engin grein, aðeins pistlar"} · ${dist.get(r.ga)} ${hf(dist.get(r.ga))}</th></tr>`:""}<tr><td><button class="au" data-a="${esc(r.a)}">${hl(r.a)}</button></td>${cell(r.ga)}${cell(r.pa)}${cell(r.b)}<td class="n"><b>${r.t}</b></td><td><div class="spark" title="${esc(Object.entries(r.yrs).map(([y,v])=>y+": "+(v.g+v.p)).join(", "))}">${
       YEARS.map(y=>{const v=r.yrs[y];if(!v)return'<span class="e"></span>';const h=Math.max(3,(v.g+v.p)/mx*22);return`<span class="${v.p>v.g?"p":""}" style="height:${h}px"></span>`}).join("")}</div></td></tr>`).join("")
-  }</tbody></table></div>`;
+  }</tbody></table></div><p class="tnote">Greinar og Pistlar telja með færslu Baldurs Sigurðssonar sem er merkt hvoru tveggja. Hún er líka sýnd í dálkinum Bæði og telst einu sinni í Alls.</p>`;
   $("view").querySelectorAll("th button").forEach(b=>b.onclick=()=>{const k=b.dataset.k;if(S.sortA===k)S.dirA*=-1;else{S.sortA=k;S.dirA=k==="a"?1:-1}render()});
   $("view").querySelectorAll(".au").forEach(b=>b.onclick=()=>pickAuthor(b.dataset.a));
+  $("view").querySelectorAll(".drow").forEach(b=>b.onclick=()=>{const k=+b.dataset.k;S.nG=S.nG===k?null:k;render()});
 }
+const one=n=>n%10===1&&n%100!==11;
+const gr=n=>`${n} ${one(n)?"grein":"greinar"}`;
+const hf=n=>one(n)?"höfundur":"höfundar";
 function render(){
   document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",b.dataset.view===S.view));
   document.querySelectorAll("#typechips .chip").forEach(b=>b.setAttribute("aria-pressed",b.dataset.type===S.type));
   $("yfrom").value=S.from;$("yto").value=S.to;
   $("q").placeholder=S.view==="skra"?"Leita að titli eða höfundi…":"Leita að höfundi…";
   const opts=S.view==="skra"?[["yr-desc","Nýjast fyrst"],["yr-asc","Elst fyrst"],["ttl-asc","Titill A–Ö"],["nr-asc","Númer í skrá"]]
-    :[["t:-1","Flestar færslur"],["a:1","Nafn A–Ö"],["g:-1","Flestar greinar"],["p:-1","Flestir pistlar"]];
+    :[["ga:-1","Flestar greinar"],["ga:1","Fæstar greinar"],["t:-1","Flestar færslur"],["a:1","Nafn A–Ö"],["pa:-1","Flestir pistlar"]];
   $("sort").innerHTML=opts.map(([v,l])=>`<option value="${v}">${l}</option>`).join("");
   const cur=S.view==="skra"?S.sortS:`${S.sortA}:${S.dirA}`;
   $("sort").value=opts.some(o=>o[0]===cur)?cur:opts[0][0];
