@@ -1,0 +1,163 @@
+<title>Höfundar Skólaþráða</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: narrow masthead + year chart, sticky filter bar, then one of two views (skrá / höfundar) */
+:root{
+  --bg:#f3f5f6; --surface:#ffffff; --ink:#16232b; --muted:#5b6a73; --line:#d7dee2;
+  --accent:#1f5f74; --accent-soft:#dcebf0; --grein:#2f6f86; --pistill:#b5762a; --ritdomur:#4d7a3a; --vidtal:#a5455c; --fleiri:#6b5aa6; --pistill-soft:#f5e8d6;
+  --display:"Source Serif 4", Georgia, "Times New Roman", serif;
+  --body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f171c; --surface:#16222a; --ink:#e4ecef; --muted:#93a5ae; --line:#2a3a44;
+  --accent:#7cc0d6; --accent-soft:#1d3a46; --grein:#5fa9c2; --pistill:#e0a253; --ritdomur:#8fc47a; --vidtal:#e48ba1; --fleiri:#a596e0; --pistill-soft:#3a2d1c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f171c; --surface:#16222a; --ink:#e4ecef; --muted:#93a5ae; --line:#2a3a44;
+  --accent:#7cc0d6; --accent-soft:#1d3a46; --grein:#5fa9c2; --pistill:#e0a253; --ritdomur:#8fc47a; --vidtal:#e48ba1; --fleiri:#a596e0; --pistill-soft:#3a2d1c; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--body);padding-inline:16px;padding-block:0 48px}
+.wrap{max-width:1040px;margin:0 auto}
+header.mast{padding-block:32px 8px;display:grid;gap:6px}
+.eyebrow{font:500 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font:700 clamp(28px,5vw,42px)/1.1 var(--display);margin:0;text-wrap:balance}
+.lede{color:var(--muted);max-width:65ch;margin:0}
+.stats{display:flex;flex-wrap:wrap;gap:8px 24px;margin-top:10px;font:400 13px var(--mono);color:var(--muted)}
+.stats b{font:600 18px var(--mono);color:var(--ink);margin-right:4px}
+section.chart{margin-top:22px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px 16px 10px}
+.chart-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline}
+.chart-head h2{font:600 16px var(--display);margin:0}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.bars{display:grid;grid-template-columns:repeat(11,1fr);gap:6px;align-items:end;height:170px;margin-top:12px}
+.bar{all:unset;cursor:pointer;display:flex;flex-direction:column;justify-content:flex-end;height:100%;position:relative;border-radius:3px}
+.bar .stack{display:flex;flex-direction:column-reverse;border-radius:3px 3px 0 0;overflow:hidden;opacity:.9}
+.bar .stack span{display:block}
+.bar .val{font:500 11px var(--mono);text-align:center;color:var(--muted);margin-bottom:3px;font-variant-numeric:tabular-nums}
+.bar.off .stack{opacity:.22}
+.bar:hover .stack{opacity:1}
+.bar:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.years{display:grid;grid-template-columns:repeat(11,1fr);gap:6px;margin-top:6px;font:400 11px var(--mono);color:var(--muted);text-align:center}
+.chart-note{font-size:12px;color:var(--muted);margin:8px 0 0}
+.toolbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:14px 10px;margin-top:14px;border-bottom:1px solid var(--line);display:grid;gap:10px}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tab{all:unset;cursor:pointer;padding:7px 14px;border-radius:999px;font-weight:500;font-size:14px;color:var(--muted)}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.tab:focus-visible,.chip:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.filters{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.search{flex:1 1 260px;min-width:0;position:relative}
+.search input{width:100%;font:inherit;padding:9px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}
+.chips{display:flex;gap:4px;flex-wrap:wrap}
+.chip{all:unset;cursor:pointer;font-size:13px;padding:5px 11px;border:1px solid var(--line);border-radius:999px;background:var(--surface)}
+.chip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--ink);font-weight:500}
+.range{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--muted)}
+select{font:inherit;font-size:13px;padding:5px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}
+.active{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--muted);min-height:0}
+.active:empty{display:none}
+.pill-x{all:unset;cursor:pointer;display:inline-flex;gap:6px;align-items:center;padding:3px 10px;border-radius:999px;background:var(--accent-soft);color:var(--ink);font-size:13px}
+.pill-x::after{content:"×";font-size:15px;line-height:1;color:var(--muted)}
+.linkbtn{all:unset;cursor:pointer;color:var(--accent);text-decoration:underline;text-underline-offset:2px;font-size:13px}
+.result-line{font:400 13px var(--mono);color:var(--muted);margin:14px 0 6px}
+/* entries */
+ol.entries{list-style:none;margin:0;padding:0;display:grid}
+.entry{display:grid;grid-template-columns:52px 1fr;gap:4px 14px;padding:12px 0;border-bottom:1px solid var(--line)}
+.entry .yr{font:500 14px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums;padding-top:2px}
+.entry .main{min-width:0;display:grid;gap:3px}
+.entry .ttl{font:600 17px/1.35 var(--display);text-wrap:pretty;overflow-wrap:anywhere}
+.entry .meta{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;font-size:13.5px;color:var(--muted)}
+.type{font:500 11px var(--mono);letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:3px;border:1px solid currentColor}
+.type.grein{color:var(--grein)} .type.pistill{color:var(--pistill)} .type.ritdomur{color:var(--ritdomur)} .type.vidtal{color:var(--vidtal)}
+.entry .sub{font-size:13.5px;color:var(--muted)}
+.entry .meta .type+.type{margin-left:-4px}
+.au{all:unset;cursor:pointer;color:var(--ink);border-bottom:1px dotted var(--muted)}
+.au:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.nr{font:400 12px var(--mono);color:var(--muted)}
+mark{background:var(--pistill-soft);color:inherit;border-radius:2px;padding:0 1px}
+/* authors table */
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:620px}
+th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font:500 12px var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--muted);white-space:nowrap;background:var(--surface);position:sticky;top:0}
+th button{all:unset;cursor:pointer}
+th button[data-dir]::after{content:attr(data-dir);margin-left:4px;color:var(--accent)}
+td.n,th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+td.zero{color:var(--line)}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--accent-soft)}
+.spark{display:grid;grid-template-columns:repeat(11,8px);gap:2px;align-items:end;height:22px}
+.spark span{display:block;background:var(--grein);border-radius:1px;min-height:0}
+.spark span.e{background:var(--line);height:2px!important}
+.dist{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px;margin-bottom:16px}
+.dist-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;align-items:baseline;margin-bottom:8px}
+.dist-head h2{font:600 16px var(--display);margin:0;display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
+.dist-head h2 select{font:600 15px var(--display)}
+.dist-head span{font-size:12px;color:var(--muted)}
+.dist-rows{display:grid;gap:2px}
+.drow{all:unset;cursor:pointer;display:grid;grid-template-columns:96px 1fr 104px;gap:12px;align-items:center;padding:4px 6px;border-radius:4px;font-size:13.5px}
+.drow:hover{background:var(--accent-soft)}
+.drow[aria-pressed="true"]{background:var(--accent-soft);font-weight:600}
+.drow:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.dk{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.dbar{height:12px;background:var(--bg);border-radius:2px;overflow:hidden}
+.dbar span{display:block;height:100%;background:var(--grein);border-radius:2px;min-width:2px}
+.dn{font-family:var(--mono);color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+tr.grp th{background:var(--bg);color:var(--ink);font:600 13px var(--body);text-transform:none;letter-spacing:0;position:static;padding-top:14px}
+tbody tr.grp:hover{background:var(--bg)}
+.tnote{font-size:12px;color:var(--muted);margin:8px 0 0}
+.empty{padding:28px 0;color:var(--muted)}
+details.notes{margin-top:36px;border-top:1px solid var(--line);padding-top:16px;color:var(--muted);font-size:14px}
+details.notes summary{cursor:pointer;font:600 15px var(--display);color:var(--ink)}
+details.notes p{max-width:70ch}
+.more{all:unset;cursor:pointer;display:block;margin:16px auto 0;padding:9px 18px;border:1px solid var(--line);border-radius:999px;background:var(--surface);font-weight:500}
+@media (max-width:560px){
+  .drow{grid-template-columns:auto 1fr auto;gap:8px;font-size:12.5px}
+  .dk,.dn{white-space:nowrap}
+  .toolbar{position:static}
+  .bars,.years{gap:3px}
+  .entry{grid-template-columns:1fr}
+  .entry .yr{padding:0}
+  .bar .val{font-size:10px}
+}
+@media (prefers-reduced-motion:no-preference){.bar .stack{transition:opacity .15s}}
+</style>
+<div class="wrap">
+<header class="mast">
+  <div class="eyebrow">Greinar · pistlar · ritdómar · viðtöl</div>
+  <h1>Höfundar Skólaþráða 2016–2026</h1>
+  <p class="lede">Allar <span id="total"></span> færslurnar á einum stað. Leitaðu að titli eða höfundi, síaðu eftir flokki og árum, eða smelltu á súlu eða nafn til að þrengja leitina.</p>
+  <div class="stats" id="stats"></div>
+</header>
+<section class="chart" aria-label="Fjöldi eftir árum">
+  <div class="chart-head"><h2>Fjöldi eftir árum</h2>
+    <div class="legend" id="legend"></div></div>
+  <div class="bars" id="bars"></div>
+  <div class="years" id="years"></div>
+  <p class="chart-note">Smelltu á ár til að skoða aðeins það ár. Smelltu aftur til að sjá öll árin.</p>
+</section>
+<div class="toolbar">
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-skra" data-view="skra">Færslur</button>
+    <button class="tab" role="tab" id="tab-hofundar" data-view="hofundar">Höfundar</button>
+  </div>
+  <div class="filters">
+    <div class="search"><input id="q" type="search" placeholder="Leita að titli, höfundi, viðmælanda eða bók…" aria-label="Leit" autocomplete="off"></div>
+    <div class="chips" id="typechips" role="group" aria-label="Flokkur"></div>
+    <div class="range"><label for="yfrom">Frá</label><select id="yfrom"></select><label for="yto">til</label><select id="yto"></select></div>
+    <div class="range" id="sortbox"><label for="sort">Röðun</label><select id="sort"></select></div>
+  </div>
+  <div class="active" id="active"></div>
+</div>
+<div id="result" class="result-line"></div>
+<main id="view"></main>
+<details class="notes">
+  <summary>Um gögnin</summary>
+  <p>Greinar og pistlar: byggt á þremur viðhengjum og pistlatextanum í skilaboðum. Alls 285 einstakar færslur: 254 eingöngu merktar greinar, 30 eingöngu merktar pistlar og ein merkt bæði grein og pistill. Höfundur kemur ekki fram í tveimur greinafærslum.</p>
+  <p>Flokkun fylgir merkingum í heimildunum. Grein sem einnig er merkt ritdómur er hér talin grein. „Punktar um læsi (í víðum skilningi)“ eftir Baldur Sigurðsson (2017) er bæði grein og pistill og birtist aðeins einu sinni í heildartalningu. Hún kemur fram bæði undir greinum og pistlum þegar síað er eftir flokki.</p>
+  <p>Samhöfundafærsla er talin hjá hverjum nafngreindum höfundi. Alls = greinar eingöngu + pistlar eingöngu + bæði. Þýðingar og endurbirtingar teljast sérfærslur. Ártöl eru birtingarár. Ónafngreint samstarfsfólk, ljósmyndarar, þýðendur og einstaklingar sem greinar eru tileinkaðar teljast ekki höfundar vegna þess eins.</p>
+  <p>Ritdómar: átta færslur. „Meginiðja mannfólksins: Umsögn um bók eftir Philip Kitcher“ (2022) var þegar í skránni sem grein og er merkt bæði grein og ritdómur. Hún telst einu sinni. Höfundur bókarinnar sem er rýnd telst ekki höfundur ritdómsins.</p>
+  <p>Viðtöl: 14 færslur. Sá sem tók viðtalið telst höfundur og viðmælendur eru skráðir sér. Í fjórum viðtölum ritstjórnar við kennara sem tilnefndir voru til Íslensku menntaverðlaunanna 2022 er spyrjandi ekki nafngreindur. Viðtöl sem birtust bæði á íslensku og ensku teljast tvær færslur.</p>
+  <p>Nafnaafbrigði sameinuð: Nanna K./Nanna Kristín Christiansen; Guðbjörg R./Guðbjörg Rut Þórisdóttir; Birna María/Birna María B. Svanbjörnsdóttir.</p>
+</details>
+</div>
